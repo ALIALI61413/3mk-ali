@@ -1,0 +1,197 @@
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "3MK ALI Hub",
+    Text = "تم تفعيل السكربت بنجاح 🚀",
+    Duration = 5
+})
+
+local VirtualUser = game:GetService("VirtualUser")
+game.Players.LocalPlayer.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+end)
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield', true))()
+local Window = Rayfield:CreateWindow({
+    Name = "3MK ALI Hub",
+    LoadingTitle = "جاري تحميل 3MK ALI Hub",
+    LoadingSubtitle = "واجهة مميزة وسلسة 🎮",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "3MKALIHub",
+        FileName = "HubConfig"
+    },
+    Theme = {
+        BackgroundTransparency = 0.2,
+        SmoothTransitionSpeed = 0.5
+    }
+})
+
+local fullBrightEnabled = false
+local espEnabled = false
+local hitboxEnabled = false
+local noclipEnabled = false
+local noclipConn = nil
+local defaultWalkSpeed = 16
+local defaultJumpHeight = 7
+
+local MainTab = Window:CreateTab("المهام الرئيسية 🔰")
+local SettingsTab = Window:CreateTab("الإعدادات ⚙️")
+
+SettingsTab:CreateToggle({
+    Name = "full bright",
+    CurrentValue = false,
+    Callback = function(state)
+        fullBrightEnabled = state
+        if state then
+            game.Lighting.Brightness = 2
+            game.Lighting.ClockTime = 14
+            game.Lighting.FogEnd = 100000
+            game.Lighting.GlobalShadows = false
+        else
+            game.Lighting.Brightness = 1
+            game.Lighting.ClockTime = 14
+            game.Lighting.FogEnd = 1000
+            game.Lighting.GlobalShadows = true
+        end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "ESP",
+    CurrentValue = false,
+    Callback = function(state)
+        espEnabled = state
+        if state then
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                if plr ~= game.Players.LocalPlayer and plr.Character then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "ESP"
+                    hl.FillColor = Color3.new(1,1,0)
+                    hl.OutlineColor = Color3.new(1,1,1)
+                    hl.FillTransparency = 0.5
+                    hl.OutlineTransparency = 0
+                    hl.Adornee = plr.Character
+                    hl.Parent = plr.Character
+                end
+            end
+            game.Players.PlayerAdded:Connect(function(plr)
+                plr.CharacterAdded:Connect(function(char)
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "ESP"
+                    hl.FillColor = Color3.new(1,1,0)
+                    hl.OutlineColor = Color3.new(1,1,1)
+                    hl.FillTransparency = 0.5
+                    hl.OutlineTransparency = 0
+                    hl.Adornee = char
+                    hl.Parent = char
+                end)
+            end)
+        else
+            for _, plr in pairs(game.Players:GetPlayers()) do
+                if plr.Character then
+                    local old = plr.Character:FindFirstChild("ESP")
+                    if old then old:Destroy() end
+                end
+            end
+        end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "hitbox",
+    CurrentValue = false,
+    Callback = function(state)
+        hitboxEnabled = state
+        local function apply(plr)
+            plr.CharacterAdded:Connect(function(char)
+                local hrp = char:WaitForChild("HumanoidRootPart",5)
+                if hrp then
+                    if hitboxEnabled then
+                        hrp.Size = Vector3.new(10,10,10)
+                        hrp.Transparency = 0.5
+                        hrp.BrickColor = BrickColor.new("Bright red")
+                        hrp.Material = Enum.Material.Neon
+                        hrp.CanCollide = false
+                    else
+                        hrp.Size = Vector3.new(2,2,1)
+                        hrp.Transparency = 1
+                        hrp.Material = Enum.Material.Plastic
+                        hrp.CanCollide = true
+                    end
+                end
+            end)
+            if plr.Character then
+                plr.Character:WaitForChild("HumanoidRootPart",5)
+                apply(plr)
+            end
+        end
+        for _, plr in pairs(game.Players:GetPlayers()) do
+            if plr ~= game.Players.LocalPlayer then apply(plr) end
+        end
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "speed",
+    Range = {16,100},
+    Increment = 1,
+    CurrentValue = 16,
+    Callback = function(val)
+        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hm then hm.WalkSpeed = val end
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "jump",
+    Range = {7,200},
+    Increment = 1,
+    CurrentValue = 7,
+    Callback = function(val)
+        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hm then hm.JumpHeight = val end
+    end
+})
+
+SettingsTab:CreateButton({
+    Name = "normal speed",
+    Callback = function()
+        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hm then hm.WalkSpeed = defaultWalkSpeed end
+    end
+})
+
+SettingsTab:CreateButton({
+    Name = "normal jump",
+    Callback = function()
+        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hm then hm.JumpHeight = defaultJumpHeight end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "noclip",
+    CurrentValue = false,
+    Callback = function(state)
+        noclipEnabled = state
+        if state then
+            noclipConn = game:GetService("RunService").Stepped:Connect(function()
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then part.CanCollide = false end
+                    end
+                end
+            end)
+        else
+            if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+            local char = game.Players.LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+        end
+    end
+})
