@@ -30,6 +30,8 @@ local Window = Rayfield:CreateWindow({
 local fullBrightEnabled = false
 local espEnabled = false
 local hitboxEnabled = false
+local hitboxSize = 10
+local hitboxTransparency = 0.5
 local noclipEnabled = false
 local noclipConn = nil
 local defaultWalkSpeed = 16
@@ -37,6 +39,83 @@ local defaultJumpHeight = 7
 
 local MainTab = Window:CreateTab("المهام الرئيسية 🔰")
 local SettingsTab = Window:CreateTab("الإعدادات ⚙️")
+
+local function applyHitbox(char)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        if hitboxEnabled then
+            hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
+            hrp.Transparency = hitboxTransparency
+            hrp.BrickColor = BrickColor.new("Bright red")
+            hrp.Material = Enum.Material.Neon
+            hrp.CanCollide = false
+        else
+            hrp.Size = Vector3.new(2, 2, 1)
+            hrp.Transparency = 1
+            hrp.Material = Enum.Material.Plastic
+            hrp.CanCollide = true
+        end
+    end
+end
+
+local function applyHitboxToPlayer(player)
+    if player.Character then
+        applyHitbox(player.Character)
+    end
+    player.CharacterAdded:Connect(applyHitbox)
+end
+
+SettingsTab:CreateToggle({
+    Name = "hitbox",
+    CurrentValue = false,
+    Callback = function(state)
+        hitboxEnabled = state
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                applyHitboxToPlayer(player)
+            end
+        end
+        game.Players.PlayerAdded:Connect(function(player)
+            if player ~= game.Players.LocalPlayer then
+                applyHitboxToPlayer(player)
+            end
+        end)
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "حجم hitbox",
+    Range = {2, 30},
+    Increment = 1,
+    CurrentValue = hitboxSize,
+    Callback = function(val)
+        hitboxSize = val
+        if hitboxEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    applyHitbox(player.Character)
+                end
+            end
+        end
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "شفافية hitbox",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = hitboxTransparency,
+    Callback = function(val)
+        hitboxTransparency = val
+        if hitboxEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    applyHitbox(player.Character)
+                end
+            end
+        end
+    end
+})
 
 SettingsTab:CreateToggle({
     Name = "full bright",
@@ -95,50 +174,6 @@ SettingsTab:CreateToggle({
                 end
             end
         end
-    end
-})
-
-SettingsTab:CreateToggle({
-    Name = "hitbox",
-    CurrentValue = false,
-    Callback = function(state)
-        hitboxEnabled = state
-        local function applyHitboxToPlayer(player)
-            local function onCharacterAdded(char)
-                local hrp = char:WaitForChild("HumanoidRootPart", 5)
-                if hrp then
-                    if hitboxEnabled then
-                        hrp.Size = Vector3.new(10, 10, 10)
-                        hrp.Transparency = 0.5
-                        hrp.BrickColor = BrickColor.new("Bright red")
-                        hrp.Material = Enum.Material.Neon
-                        hrp.CanCollide = false
-                    else
-                        hrp.Size = Vector3.new(2, 2, 1)
-                        hrp.Transparency = 1
-                        hrp.Material = Enum.Material.Plastic
-                        hrp.CanCollide = true
-                    end
-                end
-            end
-
-            if player.Character then
-                onCharacterAdded(player.Character)
-            end
-            player.CharacterAdded:Connect(onCharacterAdded)
-        end
-
-        for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer then
-                applyHitboxToPlayer(player)
-            end
-        end
-
-        game.Players.PlayerAdded:Connect(function(player)
-            if player ~= game.Players.LocalPlayer then
-                applyHitboxToPlayer(player)
-            end
-        end)
     end
 })
 
