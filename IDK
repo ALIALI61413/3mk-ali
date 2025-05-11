@@ -103,32 +103,42 @@ SettingsTab:CreateToggle({
     CurrentValue = false,
     Callback = function(state)
         hitboxEnabled = state
-        local function apply(plr)
-            plr.CharacterAdded:Connect(function(char)
-                local hrp = char:WaitForChild("HumanoidRootPart",5)
+        local function applyHitboxToPlayer(player)
+            local function onCharacterAdded(char)
+                local hrp = char:WaitForChild("HumanoidRootPart", 5)
                 if hrp then
                     if hitboxEnabled then
-                        hrp.Size = Vector3.new(10,10,10)
+                        hrp.Size = Vector3.new(10, 10, 10)
                         hrp.Transparency = 0.5
                         hrp.BrickColor = BrickColor.new("Bright red")
                         hrp.Material = Enum.Material.Neon
                         hrp.CanCollide = false
                     else
-                        hrp.Size = Vector3.new(2,2,1)
+                        hrp.Size = Vector3.new(2, 2, 1)
                         hrp.Transparency = 1
                         hrp.Material = Enum.Material.Plastic
                         hrp.CanCollide = true
                     end
                 end
-            end)
-            if plr.Character then
-                plr.Character:WaitForChild("HumanoidRootPart",5)
-                apply(plr)
+            end
+
+            if player.Character then
+                onCharacterAdded(player.Character)
+            end
+            player.CharacterAdded:Connect(onCharacterAdded)
+        end
+
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                applyHitboxToPlayer(player)
             end
         end
-        for _, plr in pairs(game.Players:GetPlayers()) do
-            if plr ~= game.Players.LocalPlayer then apply(plr) end
-        end
+
+        game.Players.PlayerAdded:Connect(function(player)
+            if player ~= game.Players.LocalPlayer then
+                applyHitboxToPlayer(player)
+            end
+        end)
     end
 })
 
