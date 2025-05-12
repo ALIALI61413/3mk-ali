@@ -1,9 +1,11 @@
+-- إشعار عند التفعيل
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "3MK ALI Hub",
     Text = "تم تفعيل السكربت بنجاح 🚀",
     Duration = 5
 })
 
+-- منع الخروج التلقائي
 local VirtualUser = game:GetService("VirtualUser")
 game.Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
@@ -11,6 +13,7 @@ game.Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
+-- واجهة Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield', true))()
 local Window = Rayfield:CreateWindow({
     Name = "3MK ALI Hub",
@@ -27,6 +30,7 @@ local Window = Rayfield:CreateWindow({
     }
 })
 
+-- متغيرات عامة
 local fullBrightEnabled = false
 local espEnabled = false
 local hitboxEnabled = false
@@ -40,10 +44,11 @@ local defaultJumpHeight = 7
 local MainTab = Window:CreateTab("المهام الرئيسية 🔰")
 local SettingsTab = Window:CreateTab("الإعدادات ⚙️")
 
-local function applyHitbox(char)
+-- دالة hitbox المعدلة
+local function applyHitbox(char, isLocalPlayer)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp then
-        if hitboxEnabled then
+        if hitboxEnabled and not isLocalPlayer then
             hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
             hrp.Transparency = hitboxTransparency
             hrp.BrickColor = BrickColor.new("Bright red")
@@ -60,26 +65,44 @@ end
 
 local function applyHitboxToPlayer(player)
     if player.Character then
-        applyHitbox(player.Character)
+        applyHitbox(player.Character, player == game.Players.LocalPlayer)
     end
-    player.CharacterAdded:Connect(applyHitbox)
+    player.CharacterAdded:Connect(function(character)
+        applyHitbox(character, player == game.Players.LocalPlayer)
+    end)
 end
 
+game.Players.PlayerAdded:Connect(applyHitboxToPlayer)
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        local hrp = character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.Size = Vector3.new(2, 2, 1)
+            hrp.Transparency = 1
+            hrp.Material = Enum.Material.Plastic
+            hrp.CanCollide = true
+        end
+    end)
+end)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player.Character then
+            applyHitbox(player.Character, player == game.Players.LocalPlayer)
+        end
+    end
+end)
+
+-- أدوات الإعدادات
 SettingsTab:CreateToggle({
     Name = "hitbox",
     CurrentValue = false,
     Callback = function(state)
         hitboxEnabled = state
         for _, player in pairs(game.Players:GetPlayers()) do
-            if player ~= game.Players.LocalPlayer then
-                applyHitboxToPlayer(player)
-            end
+            applyHitboxToPlayer(player)
         end
-        game.Players.PlayerAdded:Connect(function(player)
-            if player ~= game.Players.LocalPlayer then
-                applyHitboxToPlayer(player)
-            end
-        end)
     end
 })
 
@@ -90,13 +113,6 @@ SettingsTab:CreateSlider({
     CurrentValue = hitboxSize,
     Callback = function(val)
         hitboxSize = val
-        if hitboxEnabled then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer and player.Character then
-                    applyHitbox(player.Character)
-                end
-            end
-        end
     end
 })
 
@@ -107,13 +123,6 @@ SettingsTab:CreateSlider({
     CurrentValue = hitboxTransparency,
     Callback = function(val)
         hitboxTransparency = val
-        if hitboxEnabled then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer and player.Character then
-                    applyHitbox(player.Character)
-                end
-            end
-        end
     end
 })
 
