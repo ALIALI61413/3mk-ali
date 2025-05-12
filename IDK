@@ -1,11 +1,9 @@
--- إشعار عند التفعيل
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "3MK ALI Hub",
     Text = "تم تفعيل السكربت بنجاح 🚀",
     Duration = 5
 })
 
--- منع الخروج التلقائي
 local VirtualUser = game:GetService("VirtualUser")
 game.Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
@@ -13,7 +11,6 @@ game.Players.LocalPlayer.Idled:Connect(function()
     VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
--- واجهة Rayfield
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield', true))()
 local Window = Rayfield:CreateWindow({
     Name = "3MK ALI Hub",
@@ -30,7 +27,6 @@ local Window = Rayfield:CreateWindow({
     }
 })
 
--- متغيرات عامة
 local fullBrightEnabled = false
 local espEnabled = false
 local hitboxEnabled = false
@@ -44,7 +40,6 @@ local defaultJumpHeight = 7
 local MainTab = Window:CreateTab("المهام الرئيسية 🔰")
 local SettingsTab = Window:CreateTab("الإعدادات ⚙️")
 
--- دالة hitbox المعدلة
 local function applyHitbox(char, isLocalPlayer)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp then
@@ -94,7 +89,6 @@ game:GetService("RunService").Heartbeat:Connect(function()
     end
 end)
 
--- أدوات الإعدادات
 SettingsTab:CreateToggle({
     Name = "hitbox",
     CurrentValue = false,
