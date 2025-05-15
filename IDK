@@ -1,49 +1,124 @@
-game:GetService("StarterGui"):SetCore("SendNotification", {
-    Title = "3MK ALI Hub",
-    Text = "تم تفعيل السكربت بنجاح 🚀",
-    Duration = 5
-})
-
-local VirtualUser = game:GetService("VirtualUser")
-game.Players.LocalPlayer.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-end)
-
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield', true))()
+
 local Window = Rayfield:CreateWindow({
     Name = "3MK ALI Hub",
     LoadingTitle = "جاري تحميل 3MK ALI Hub",
-    LoadingSubtitle = "واجهة مميزة وسلسة 🎮",
+    LoadingSubtitle = "واجهة مميزة وسلسة",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "3MKALIHub",
         FileName = "HubConfig"
-    },
-    Theme = {
-        BackgroundTransparency = 0.2,
-        SmoothTransitionSpeed = 0.5
     }
 })
 
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- Variables
 local fullBrightEnabled = false
 local espEnabled = false
-local hitboxEnabled = false
+local speedEnabled = false
+local speedValue = 16
+local jumpEnabled = false
+local jumpPowerValue = 50
+local noclipEnabled = false
 local hitboxSize = 10
 local hitboxTransparency = 0.5
-local noclipEnabled = false
-local noclipConn = nil
-local defaultWalkSpeed = 16
-local defaultJumpHeight = 7
+local hitboxEnabled = false
+local skeletonEnabled = false
 
-local MainTab = Window:CreateTab("المهام الرئيسية 🔰")
-local SettingsTab = Window:CreateTab("الإعدادات ⚙️")
+-- FullBright function
+local function setFullBright(state)
+    if state then
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+    else
+        Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+        Lighting.Brightness = 1
+        Lighting.GlobalShadows = true
+    end
+end
 
-local function applyHitbox(char, isLocalPlayer)
+-- ESP (مربع حول اللاعبين)
+local espBoxes = {}
+
+local function createESPBox(player)
+    local box = Drawing.new("Square")
+    box.Color = Color3.fromRGB(0, 255, 0) -- أخضر
+    box.Thickness = 2
+    box.Filled = false
+    box.Visible = false
+    espBoxes[player] = box
+end
+
+local function removeESPBox(player)
+    if espBoxes[player] then
+        espBoxes[player]:Remove()
+        espBoxes[player] = nil
+    end
+end
+
+local function updateESP()
+    local camera = workspace.CurrentCamera
+    for player, box in pairs(espBoxes) do
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
+            local rootPart = char.HumanoidRootPart
+            local pos, onScreen = camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                local size = 50
+                box.Size = Vector2.new(size, size)
+                box.Position = Vector2.new(pos.X - size/2, pos.Y - size/2)
+                box.Visible = true
+            else
+                box.Visible = false
+            end
+        else
+            box.Visible = false
+        end
+    end
+end
+
+-- Speed and Jump
+local function setSpeed(state)
+    if state then
+        Humanoid.WalkSpeed = speedValue
+    else
+        Humanoid.WalkSpeed = 16
+    end
+end
+
+local function setJump(state)
+    if state then
+        Humanoid.JumpPower = jumpPowerValue
+    else
+        Humanoid.JumpPower = 50
+    end
+end
+
+-- NoClip
+local function noclipLoop()
+    if noclipEnabled then
+        for _, part in pairs(Character:GetChildren()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end
+RunService.Stepped:Connect(noclipLoop)
+
+-- Hitbox
+local function applyHitbox(char, isLocal)
     local hrp = char:FindFirstChild("HumanoidRootPart")
     if hrp then
-        if hitboxEnabled and not isLocalPlayer then
+        if hitboxEnabled and not isLocal then
             hrp.Size = Vector3.new(hitboxSize, hitboxSize, hitboxSize)
             hrp.Transparency = hitboxTransparency
             hrp.BrickColor = BrickColor.new("Bright red")
@@ -60,48 +135,197 @@ end
 
 local function applyHitboxToPlayer(player)
     if player.Character then
-        applyHitbox(player.Character, player == game.Players.LocalPlayer)
+        applyHitbox(player.Character, player == LocalPlayer)
     end
-    player.CharacterAdded:Connect(function(character)
-        applyHitbox(character, player == game.Players.LocalPlayer)
+    player.CharacterAdded:Connect(function(char)
+        applyHitbox(char, player == LocalPlayer)
     end)
 end
 
-game.Players.PlayerAdded:Connect(applyHitboxToPlayer)
+Players.PlayerAdded:Connect(applyHitboxToPlayer)
 
-game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.Size = Vector3.new(2, 2, 1)
-            hrp.Transparency = 1
-            hrp.Material = Enum.Material.Plastic
-            hrp.CanCollide = true
+RunService.Heartbeat:Connect(function()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character then
+            applyHitbox(player.Character, player == LocalPlayer)
         end
-    end)
+    end
+    if espEnabled then
+        updateESP()
+    end
 end)
 
-game:GetService("RunService").Heartbeat:Connect(function()
-    for _, player in pairs(game.Players:GetPlayers()) do
+-- Skeleton Lines
+local skeletonLines = {}
+
+local function createLine()
+    local line = Drawing.new("Line")
+    line.Color = Color3.fromRGB(0,255,0)
+    line.Thickness = 2
+    line.Transparency = 1
+    line.Visible = false
+    return line
+end
+
+local function toggleSkeleton(char)
+    if skeletonEnabled then
+        if not skeletonLines[char] then
+            local lines = {}
+            local bones = {
+                {"Head", "HumanoidRootPart"},
+                {"HumanoidRootPart", "LeftUpperLeg"},
+                {"LeftUpperLeg", "LeftLowerLeg"},
+                {"LeftLowerLeg", "LeftFoot"},
+                {"HumanoidRootPart", "RightUpperLeg"},
+                {"RightUpperLeg", "RightLowerLeg"},
+                {"RightLowerLeg", "RightFoot"},
+                {"HumanoidRootPart", "UpperTorso"},
+                {"UpperTorso", "LeftUpperArm"},
+                {"LeftUpperArm", "LeftLowerArm"},
+                {"LeftLowerArm", "LeftHand"},
+                {"UpperTorso", "RightUpperArm"},
+                {"RightUpperArm", "RightLowerArm"},
+                {"RightLowerArm", "RightHand"}
+            }
+            for _=1,#bones do
+                table.insert(lines, createLine())
+            end
+            skeletonLines[char] = lines
+        end
+    else
+        if skeletonLines[char] then
+            for _, line in pairs(skeletonLines[char]) do
+                line.Visible = false
+                line:Remove()
+            end
+            skeletonLines[char] = nil
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if not skeletonEnabled then return end
+    local camera = workspace.CurrentCamera
+    for _, player in pairs(Players:GetPlayers()) do
         if player.Character then
-            applyHitbox(player.Character, player == game.Players.LocalPlayer)
+            local char = player.Character
+            toggleSkeleton(char)
+            local lines = skeletonLines[char]
+            if lines then
+                local bones = {
+                    {"Head", "HumanoidRootPart"},
+                    {"HumanoidRootPart", "LeftUpperLeg"},
+                    {"LeftUpperLeg", "LeftLowerLeg"},
+                    {"LeftLowerLeg", "LeftFoot"},
+                    {"HumanoidRootPart", "RightUpperLeg"},
+                    {"RightUpperLeg", "RightLowerLeg"},
+                    {"RightLowerLeg", "RightFoot"},
+                    {"HumanoidRootPart", "UpperTorso"},
+                    {"UpperTorso", "LeftUpperArm"},
+                    {"LeftUpperArm", "LeftLowerArm"},
+                    {"LeftLowerArm", "LeftHand"},
+                    {"UpperTorso", "RightUpperArm"},
+                    {"RightUpperArm", "RightLowerArm"},
+                    {"RightLowerArm", "RightHand"}
+                }
+                for i, bone in ipairs(bones) do
+                    local part0 = char:FindFirstChild(bone[1])
+                    local part1 = char:FindFirstChild(bone[2])
+                    if part0 and part1 then
+                        local p0, vis0 = camera:WorldToViewportPoint(part0.Position)
+                        local p1, vis1 = camera:WorldToViewportPoint(part1.Position)
+                        if vis0 and vis1 then
+                            lines[i].Visible = true
+                            lines[i].From = Vector2.new(p0.X, p0.Y)
+                            lines[i].To = Vector2.new(p1.X, p1.Y)
+                        else
+                            lines[i].Visible = false
+                        end
+                    else
+                        lines[i].Visible = false
+                    end
+                end
+            end
         end
     end
 end)
 
+-- Tabs
+
+-- Settings Tab
+local SettingsTab = Window:CreateTab("Settings")
+
 SettingsTab:CreateToggle({
-    Name = "hitbox",
-    CurrentValue = false,
+    Name = "FullBright",
+    CurrentValue = fullBrightEnabled,
     Callback = function(state)
-        hitboxEnabled = state
-        for _, player in pairs(game.Players:GetPlayers()) do
-            applyHitboxToPlayer(player)
-        end
+        fullBrightEnabled = state
+        setFullBright(state)
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "Speed",
+    CurrentValue = speedEnabled,
+    Callback = function(state)
+        speedEnabled = state
+        setSpeed(state)
     end
 })
 
 SettingsTab:CreateSlider({
-    Name = "حجم hitbox",
+    Name = "Speed Value",
+    Range = {16, 100},
+    Increment = 1,
+    CurrentValue = speedValue,
+    Callback = function(val)
+        speedValue = val
+        if speedEnabled then
+            setSpeed(true)
+        end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "Jump",
+    CurrentValue = jumpEnabled,
+    Callback = function(state)
+        jumpEnabled = state
+        setJump(state)
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "Jump Power",
+    Range = {50, 200},
+    Increment = 1,
+    CurrentValue = jumpPowerValue,
+    Callback = function(val)
+        jumpPowerValue = val
+        if jumpEnabled then
+            setJump(true)
+        end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "NoClip",
+    CurrentValue = noclipEnabled,
+    Callback = function(state)
+        noclipEnabled = state
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "Hitbox",
+    CurrentValue = hitboxEnabled,
+    Callback = function(state)
+        hitboxEnabled = state
+    end
+})
+
+SettingsTab:CreateSlider({
+    Name = "Hitbox Size",
     Range = {2, 30},
     Increment = 1,
     CurrentValue = hitboxSize,
@@ -111,7 +335,7 @@ SettingsTab:CreateSlider({
 })
 
 SettingsTab:CreateSlider({
-    Name = "شفافية hitbox",
+    Name = "Hitbox Transparency",
     Range = {0, 1},
     Increment = 0.1,
     CurrentValue = hitboxTransparency,
@@ -120,126 +344,60 @@ SettingsTab:CreateSlider({
     end
 })
 
-SettingsTab:CreateToggle({
-    Name = "full bright",
-    CurrentValue = false,
+-- Visual Tab
+local VisualTab = Window:CreateTab("👁️‍🗨️ Visual")
+
+VisualTab:CreateToggle({
+    Name = "Skeleton Bones",
+    CurrentValue = skeletonEnabled,
     Callback = function(state)
-        fullBrightEnabled = state
-        if state then
-            game.Lighting.Brightness = 2
-            game.Lighting.ClockTime = 14
-            game.Lighting.FogEnd = 100000
-            game.Lighting.GlobalShadows = false
-        else
-            game.Lighting.Brightness = 1
-            game.Lighting.ClockTime = 14
-            game.Lighting.FogEnd = 1000
-            game.Lighting.GlobalShadows = true
-        end
+        skeletonEnabled = state
     end
 })
 
-SettingsTab:CreateToggle({
+VisualTab:CreateToggle({
     Name = "ESP",
-    CurrentValue = false,
+    CurrentValue = espEnabled,
     Callback = function(state)
         espEnabled = state
         if state then
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr ~= game.Players.LocalPlayer and plr.Character then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "ESP"
-                    hl.FillColor = Color3.new(1,1,0)
-                    hl.OutlineColor = Color3.new(1,1,1)
-                    hl.FillTransparency = 0.5
-                    hl.OutlineTransparency = 0
-                    hl.Adornee = plr.Character
-                    hl.Parent = plr.Character
+            for _, player in pairs(Players:GetPlayers()) do
+                if not espBoxes[player] then
+                    createESPBox(player)
                 end
             end
-            game.Players.PlayerAdded:Connect(function(plr)
-                plr.CharacterAdded:Connect(function(char)
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "ESP"
-                    hl.FillColor = Color3.new(1,1,0)
-                    hl.OutlineColor = Color3.new(1,1,1)
-                    hl.FillTransparency = 0.5
-                    hl.OutlineTransparency = 0
-                    hl.Adornee = char
-                    hl.Parent = char
-                end)
-            end)
         else
-            for _, plr in pairs(game.Players:GetPlayers()) do
-                if plr.Character then
-                    local old = plr.Character:FindFirstChild("ESP")
-                    if old then old:Destroy() end
-                end
+            for player, box in pairs(espBoxes) do
+                removeESPBox(player)
             end
         end
     end
 })
 
-SettingsTab:CreateSlider({
-    Name = "speed",
-    Range = {16,100},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(val)
-        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hm then hm.WalkSpeed = val end
-    end
-})
-
-SettingsTab:CreateSlider({
-    Name = "jump",
-    Range = {7,200},
-    Increment = 1,
-    CurrentValue = 7,
-    Callback = function(val)
-        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hm then hm.JumpHeight = val end
-    end
-})
-
-SettingsTab:CreateButton({
-    Name = "normal speed",
-    Callback = function()
-        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hm then hm.WalkSpeed = defaultWalkSpeed end
-    end
-})
-
-SettingsTab:CreateButton({
-    Name = "normal jump",
-    Callback = function()
-        local hm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hm then hm.JumpHeight = defaultJumpHeight end
-    end
-})
-
-SettingsTab:CreateToggle({
-    Name = "noclip",
-    CurrentValue = false,
+VisualTab:CreateToggle({
+    Name = "Hitbox",
+    CurrentValue = hitboxEnabled,
     Callback = function(state)
-        noclipEnabled = state
-        if state then
-            noclipConn = game:GetService("RunService").Stepped:Connect(function()
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then part.CanCollide = false end
-                    end
-                end
-            end)
-        else
-            if noclipConn then noclipConn:Disconnect() noclipConn = nil end
-            local char = game.Players.LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then part.CanCollide = true end
-                end
-            end
-        end
+        hitboxEnabled = state
+    end
+})
+
+VisualTab:CreateSlider({
+    Name = "Hitbox Size",
+    Range = {2, 30},
+    Increment = 1,
+    CurrentValue = hitboxSize,
+    Callback = function(val)
+        hitboxSize = val
+    end
+})
+
+VisualTab:CreateSlider({
+    Name = "Hitbox Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = hitboxTransparency,
+    Callback = function(val)
+        hitboxTransparency = val
     end
 })
